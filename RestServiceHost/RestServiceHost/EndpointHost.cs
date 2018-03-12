@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RestHostable;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,9 +20,16 @@ namespace RestServiceHost
         //Constructor
         public EndpointHost(Type hostType, string uri, DirectoryInfo hostFolder)
         {
+            object hostingService = Activator.CreateInstance(hostType);
+            IRestHostable hostableService = hostingService as IRestHostable;
+
             m_Uri = uri;
-            m_ServiceHost = new ServiceHost(hostType,
+            m_ServiceHost = new ServiceHost(hostableService,
                                              new Uri(uri));
+
+            //m_Uri = uri;
+            //m_ServiceHost = new ServiceHost(hostType,
+            //                                 new Uri(uri));
 
             m_Directory = hostFolder;
             ServiceEndpoint endpoint = m_ServiceHost.AddServiceEndpoint(hostType, new WebHttpBinding(), hostFolder.Name);
@@ -61,6 +69,10 @@ namespace RestServiceHost
             {
                 m_ServiceHost.Open();
                 openSucceeded = true;
+
+                ServiceHostData injectionData = new ServiceHostData();
+                injectionData.ServiceHostUri = HostPoint;
+                Instance.ServiceHostInjection(injectionData);
             }
             catch (Exception ex)
             {

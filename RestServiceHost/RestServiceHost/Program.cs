@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Reflection;
+using RestHostable;
 
 namespace RestServiceHost
 {
@@ -17,7 +18,7 @@ namespace RestServiceHost
         static void Main(string[] args)
         {
             List<EndpointHost> m_Hosts = new List<EndpointHost>();
-            string m_HostUri = "http://localhost:5051";
+            string m_HostUri = "http://localhost:5150";
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
 
@@ -28,15 +29,17 @@ namespace RestServiceHost
 
                 foreach (FileInfo dllFile in folderInfo.GetFiles("*.dll"))
                 {
-                    Assembly assembly = Assembly.LoadFrom(dllFile.FullName);
-
-                    //using types didn't work becuase the they are coming from different dlls
-                    List<Type> hostableTypes = assembly.GetTypes().Where(c => c.GetInterfaces().Any(iface => iface.Name == "IRestHostable")).ToList();
-
-                    foreach (Type hostableType in hostableTypes)
+                    if (dllFile.Name != "IRestHostable.dll")
                     {
-                        EndpointHost newHost = new EndpointHost(hostableType, m_HostUri, folderInfo);
-                        m_Hosts.Add(newHost);
+                        Assembly assembly = Assembly.LoadFrom(dllFile.FullName);
+
+                        List<Type> hostableTypes = assembly.GetTypes().Where(c => typeof(IRestHostable).IsAssignableFrom(c)).ToList();
+
+                        foreach (Type hostableType in hostableTypes)
+                        {
+                            EndpointHost newHost = new EndpointHost(hostableType, m_HostUri, folderInfo);
+                            m_Hosts.Add(newHost);
+                        }
                     }
                 }
             }

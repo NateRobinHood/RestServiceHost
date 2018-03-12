@@ -4,10 +4,19 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RestServiceHost
+namespace RestHostable
 {
     public interface IRestHostable
     {
+        void ServiceHostInjection(ServiceHostData data);
+    }
 
+    public class ServiceHostData
+    {
+        public ServiceHostData()
+        {
+        }
+
+        public string ServiceHostUri { get; set; }
     }
 }
