@@ -14,45 +14,36 @@ namespace TestRestHost
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single,
                      ConcurrencyMode = ConcurrencyMode.Single, IncludeExceptionDetailInFaults = true)]
     [ServiceContract]
-    public class TestHost : IRestHostable
+    public class TestHost : RestHostableBase
     {
-        private ServiceHostData m_ServiceHostData = null;
-
         [WebGet(UriTemplate = "Versions", ResponseFormat = WebMessageFormat.Json)]
         [OperationContract]
-        public VersionsPackage Versions()
+        public VersionsPackage GetVersions()
         {
-            VersionsPackage versions = new VersionsPackage();
-            versions.Add(new VersionData() { Version = "v1", Link = string.Format("{0}/{1}", m_ServiceHostData.ServiceHostUri, "v1") });
-            return versions;
+            return base.Versions();
         }
 
         [WebGet(UriTemplate = "v1", ResponseFormat = WebMessageFormat.Json)]
         [OperationContract]
         public EndPointsPackage V1_EndPoints()
         {
-            EndPointsPackage endPoints = new EndPointsPackage();
-            string versions1 = "v1";
-
-            //Get All WebGets
-            List<MethodInfo> methods = this.GetType().GetMethods().Where(c => c.GetCustomAttributes(typeof(WebGetAttribute), false).Count() > 0).ToList();
-            foreach (MethodInfo method in methods)
-            {
-                WebGetAttribute webGet = method.GetCustomAttributes(typeof(WebGetAttribute), false)[0] as WebGetAttribute;
-                if (webGet != null && webGet.UriTemplate.StartsWith(versions1))
-                {
-                    EndPointData newEndPoint = new EndPointData();
-                    newEndPoint.Type = "Get";
-                    newEndPoint.Link = string.Format("{0}/{1}", m_ServiceHostData.ServiceHostUri, webGet.UriTemplate);
-                    newEndPoint.Format = webGet.ResponseFormat.ToString();
-
-                    endPoints.Add(newEndPoint);
-                }
-            }
-
-            return endPoints;
+            return base.GetEndpoints("v1");
         }
 
+        [WebGet(UriTemplate = "v2", ResponseFormat = WebMessageFormat.Json)]
+        [OperationContract]
+        public EndPointsPackage V2_EndPoints()
+        {
+            return base.GetEndpoints("v2");
+        }
+
+        public TestHost()
+        {
+            base.RegisterVersion("v1");
+            base.RegisterVersion("v2");
+        }
+
+        //Version 1
         [WebGet(UriTemplate = "v1/TestData/Incremental", ResponseFormat = WebMessageFormat.Json)]
         [OperationContract]
         public TestData V1_Incremental()
@@ -67,15 +58,22 @@ namespace TestRestHost
             return new TestData() { ValueA = "4", ValueB = "3", ValueC = "2", ValueD = "1" };
         }
 
-        #region IRestHostable
-
-        public void ServiceHostInjection(ServiceHostData data)
+        //Version 2
+        [WebGet(UriTemplate = "v2/TestData/Incremental?start={startNumber}", ResponseFormat = WebMessageFormat.Json)]
+        [OperationContract]
+        public TestData V2_Incremental(int startNumber)
         {
-            m_ServiceHostData = data;
+            return new TestData() { ValueA = (startNumber).ToString(), ValueB = (startNumber + 1).ToString(), ValueC = (startNumber + 2).ToString(), ValueD = (startNumber + 3).ToString() };
         }
 
-        #endregion
+        [WebGet(UriTemplate = "v2/TestData/Decremental?start={startNumber}", ResponseFormat = WebMessageFormat.Json)]
+        [OperationContract]
+        public TestData V2_Decremental(int startNumber)
+        {
+            return new TestData() { ValueA = (startNumber).ToString(), ValueB = (startNumber - 1).ToString(), ValueC = (startNumber - 2).ToString(), ValueD = (startNumber - 3).ToString() };
+        }
 
+        //Internal Classes
         [DataContract(Name = "TestData", Namespace = "")]
         public class TestData
         {
@@ -87,50 +85,6 @@ namespace TestRestHost
             public string ValueC;
             [DataMember(Name = "ValueD", Order = 4)]
             public string ValueD;
-        }
-
-        [DataContract(Name = "VersionsPackage")]
-        public class VersionsPackage
-        {
-            [DataMember(Name = "Versions")]
-            public List<VersionData> Versions = new List<VersionData>();
-
-            public void Add(VersionData version)
-            {
-                Versions.Add(version);
-            }
-        }
-
-        [DataContract(Name = "VersionData")]
-        public class VersionData
-        {
-            [DataMember(Name = "Version")]
-            public string Version;
-            [DataMember(Name = "Link")]
-            public string Link;
-        }
-
-        [DataContract(Name = "EndPointPackage")]
-        public class EndPointsPackage
-        {
-            [DataMember(Name = "EndPoints")]
-            public List<EndPointData> EndPoints = new List<EndPointData>();
-
-            public void Add(EndPointData endPoint)
-            {
-                EndPoints.Add(endPoint);
-            }
-        }
-
-        [DataContract(Name = "EndPointData")]
-        public class EndPointData
-        { 
-            [DataMember(Name = "Link")]
-            public string Link;
-            [DataMember(Name = "Type")]
-            public string Type;
-            [DataMember(Name = "Format")]
-            public string Format;
         }
     }
 }

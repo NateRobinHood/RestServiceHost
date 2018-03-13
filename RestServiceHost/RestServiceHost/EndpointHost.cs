@@ -27,13 +27,10 @@ namespace RestServiceHost
             m_ServiceHost = new ServiceHost(hostableService,
                                              new Uri(uri));
 
-            //m_Uri = uri;
-            //m_ServiceHost = new ServiceHost(hostType,
-            //                                 new Uri(uri));
-
             m_Directory = hostFolder;
             ServiceEndpoint endpoint = m_ServiceHost.AddServiceEndpoint(hostType, new WebHttpBinding(), hostFolder.Name);
             endpoint.EndpointBehaviors.Add(new WebHttpBehavior());
+            
         }
 
         //Public Properties
