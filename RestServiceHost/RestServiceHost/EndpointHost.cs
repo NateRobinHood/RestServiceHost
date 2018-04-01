@@ -13,8 +13,8 @@ namespace RestServiceHost
     public class EndpointHost
     {
         //Private Variables
-        private ServiceHost m_ServiceHost;
-        private DirectoryInfo m_Directory;
+        protected ServiceHost m_ServiceHost;
+        protected DirectoryInfo m_Directory;
         private string m_Uri;
 
         //Constructor
@@ -27,10 +27,15 @@ namespace RestServiceHost
             m_ServiceHost = new ServiceHost(hostableService,
                                              new Uri(uri));
 
+            m_ServiceHost.Description.Behaviors.Find<ServiceDebugBehavior>().HttpHelpPageEnabled = false;
+            m_ServiceHost.Description.Behaviors.Find<ServiceDebugBehavior>().HttpsHelpPageEnabled = false;
+
             m_Directory = hostFolder;
-            ServiceEndpoint endpoint = m_ServiceHost.AddServiceEndpoint(hostType, new WebHttpBinding(), hostFolder.Name);
+
+            WebHttpBinding binding = new WebHttpBinding();
+            binding.CrossDomainScriptAccessEnabled = true;
+            ServiceEndpoint endpoint = m_ServiceHost.AddServiceEndpoint(hostType, binding, hostFolder.Name);
             endpoint.EndpointBehaviors.Add(new WebHttpBehavior());
-            
         }
 
         //Public Properties
